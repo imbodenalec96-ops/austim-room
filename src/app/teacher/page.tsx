@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Avatar } from "@/components/Avatar";
 import { getSupabase } from "@/lib/supabase/client";
-import { ConnectionPill, useChannelStatus } from "@/lib/useConnection";
+import { ConnectionPill, useChannelState } from "@/lib/useConnection";
 import {
   blocksForToday,
   DAY_NAMES,
@@ -99,7 +99,7 @@ export default function TeacherPage() {
     };
   }, [supabase]);
 
-  const status = useChannelStatus(
+  const conn = useChannelState(
     () =>
       supabase
         .channel("teacher-pecs")
@@ -172,7 +172,7 @@ export default function TeacherPage() {
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
         </div>
         <div className="flex flex-wrap gap-2 items-center">
-          <ConnectionPill status={status} />
+          <ConnectionPill status={conn.status} detail={conn.detail} />
           <Link href="/teacher/students" className="btn btn-ghost btn-sm">
             👥 Roster
           </Link>

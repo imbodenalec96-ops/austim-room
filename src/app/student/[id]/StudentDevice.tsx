@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Avatar } from "@/components/Avatar";
 import { getSupabase } from "@/lib/supabase/client";
-import { ConnectionPill, useChannelStatus } from "@/lib/useConnection";
+import { ConnectionPill, useChannelState } from "@/lib/useConnection";
 import {
   CATEGORY_COLOR,
   CATEGORY_LABEL,
@@ -63,7 +63,7 @@ export default function StudentDevice({ student, icons, blocks }: Props) {
   }, []);
 
   // Hold a realtime channel just to render a connection indicator
-  const status = useChannelStatus(
+  const conn = useChannelState(
     () => supabase.channel(`student-${student.id}`),
     [supabase, student.id],
   );
@@ -145,7 +145,7 @@ export default function StudentDevice({ student, icons, blocks }: Props) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <ConnectionPill status={status} />
+          <ConnectionPill status={conn.status} detail={conn.detail} />
           <Link href={`/student/${student.id}/boards`} className="btn btn-soft btn-sm">
             🧩 Boards
           </Link>

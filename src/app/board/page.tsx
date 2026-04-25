@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { getSupabase } from "@/lib/supabase/client";
-import { ConnectionPill, useChannelStatus } from "@/lib/useConnection";
+import { ConnectionPill, useChannelState } from "@/lib/useConnection";
 import {
   blocksForToday,
   DAY_NAMES,
@@ -86,7 +86,7 @@ export default function BoardPage() {
   }, []);
 
   // Realtime: PECS request alerts
-  const status = useChannelStatus(
+  const conn = useChannelState(
     () =>
       supabase
         .channel("board-pecs")
@@ -175,7 +175,7 @@ export default function BoardPage() {
           </span>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          <ConnectionPill status={status} />
+          <ConnectionPill status={conn.status} detail={conn.detail} />
           <button
             className="btn btn-ghost text-white border-white/30"
             onClick={() => setCalmMode((v) => !v)}

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Avatar } from "@/components/Avatar";
-import { ConnectionPill, useChannelStatus } from "@/lib/useConnection";
+import { ConnectionPill, useChannelState } from "@/lib/useConnection";
 import { getSupabase } from "@/lib/supabase/client";
 import {
   MASTERY_BG,
@@ -39,7 +39,7 @@ export default function StudentGradebook({
   const [savedId, setSavedId] = useState<string | null>(null);
 
   // Realtime: pick up new attempts and any updates to existing ones
-  const status = useChannelStatus(
+  const conn = useChannelState(
     () =>
       supabase
         .channel(`grades-${student.id}`)
@@ -130,7 +130,7 @@ export default function StudentGradebook({
           </div>
         </div>
         <div className="flex flex-wrap gap-2 items-center">
-          <ConnectionPill status={status} />
+          <ConnectionPill status={conn.status} detail={conn.detail} />
           <Link
             href={`/teacher/students/${student.id}`}
             className="btn btn-ghost btn-sm"
