@@ -34,6 +34,7 @@ type ActiveAlert = {
 
 const ALERT_DURATION_MS = 14000;
 const TRANSITION_WARN_MIN = 2;
+const POLL_INTERVAL_MS = 4000;
 
 export default function BoardPage() {
   const supabase = useMemo(() => getSupabase(), []);
@@ -47,6 +48,8 @@ export default function BoardPage() {
   const audioReadyRef = useRef(false);
   const studentsRef = useRef<Student[]>([]);
   const iconsRef = useRef<PecsIcon[]>([]);
+  const seenRequestIds = useRef<Set<string>>(new Set());
+  const cursorRef = useRef<string>(new Date().toISOString());
 
   // Keep refs in sync so the realtime callback always sees latest lookups
   useEffect(() => {
@@ -85,6 +88,34 @@ export default function BoardPage() {
     return () => clearInterval(t);
   }, []);
 
+  // Process a single PECS request row — used by both realtime + polling
+  function handleRequest(req: PecsRequest) {
+    if (seenRequestIds.current.has(req.id)) return;
+    seenRequestIds.current.add(req.id);
+    if (req.status !== "pending" && req.status !== "in_progress") {
+      // Resolved row: clear any active alert with this id
+      setAlerts((cur) => cur.filter((x) => x.id !== req.id));
+      return;
+    }
+    const student = studentsRef.current.find((s) => s.id === req.student_id);
+    const icon = iconsRef.current.find((i) => i.id === req.icon_id);
+    if (!student || !icon) return;
+    const a: ActiveAlert = {
+      id: req.id,
+      studentId: student.id,
+      studentName: student.full_name,
+      studentPhoto: student.photo_url,
+      iconLabel: icon.label,
+      iconEmoji: icon.emoji,
+      createdAt: req.created_at,
+    };
+    setAlerts((cur) => [a, ...cur].slice(0, 4));
+    announce(`${student.full_name} wants ${icon.label}`);
+    window.setTimeout(() => {
+      setAlerts((cur) => cur.filter((x) => x.id !== a.id));
+    }, ALERT_DURATION_MS);
+  }
+
   // Realtime: PECS request alerts
   const conn = useChannelState(
     () =>
@@ -93,40 +124,49 @@ export default function BoardPage() {
         .on(
           "postgres_changes",
           { event: "INSERT", schema: "public", table: "pecs_requests" },
-          (payload) => {
-            const req = payload.new as PecsRequest;
-            const student = studentsRef.current.find((s) => s.id === req.student_id);
-            const icon = iconsRef.current.find((i) => i.id === req.icon_id);
-            if (!student || !icon) return;
-            const a: ActiveAlert = {
-              id: req.id,
-              studentId: student.id,
-              studentName: student.full_name,
-              studentPhoto: student.photo_url,
-              iconLabel: icon.label,
-              iconEmoji: icon.emoji,
-              createdAt: req.created_at,
-            };
-            setAlerts((cur) => [a, ...cur].slice(0, 4));
-            announce(`${student.full_name} wants ${icon.label}`);
-            window.setTimeout(() => {
-              setAlerts((cur) => cur.filter((x) => x.id !== a.id));
-            }, ALERT_DURATION_MS);
-          },
+          (payload) => handleRequest(payload.new as PecsRequest),
         )
         .on(
           "postgres_changes",
           { event: "UPDATE", schema: "public", table: "pecs_requests" },
           (payload) => {
             const row = payload.new as PecsRequest;
-            // If it was resolved on the dashboard, clear it from the board
             if (row.status !== "pending" && row.status !== "in_progress") {
               setAlerts((cur) => cur.filter((x) => x.id !== row.id));
+              seenRequestIds.current.add(row.id);
             }
           },
         ),
     [supabase],
   );
+
+  // Polling fallback: catches new requests when realtime is broken.
+  // No-op when realtime is working (rows are seen through realtime first
+  // and added to seenRequestIds, so the poll dedupes them).
+  useEffect(() => {
+    let cancelled = false;
+    const tick = async () => {
+      const since = cursorRef.current;
+      const { data, error } = await supabase
+        .from("pecs_requests")
+        .select("*")
+        .gt("created_at", since)
+        .order("created_at", { ascending: true })
+        .limit(20);
+      if (cancelled || error || !data) return;
+      const rows = data as PecsRequest[];
+      if (rows.length > 0) {
+        cursorRef.current = rows[rows.length - 1].created_at;
+        rows.forEach(handleRequest);
+      }
+    };
+    const t = window.setInterval(tick, POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(t);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supabase]);
 
   function announce(text: string) {
     if (silent) return;

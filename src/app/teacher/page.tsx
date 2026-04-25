@@ -108,9 +108,10 @@ export default function TeacherPage() {
           { event: "INSERT", schema: "public", table: "pecs_requests" },
           (payload) => {
             const row = payload.new as PecsRequest;
-            setRequests((cur) =>
-              [enrich(row, studentsRef.current, iconsRef.current), ...cur].slice(0, 60),
-            );
+            setRequests((cur) => {
+              if (cur.some((r) => r.id === row.id)) return cur;
+              return [enrich(row, studentsRef.current, iconsRef.current), ...cur].slice(0, 60);
+            });
           },
         )
         .on(
@@ -127,6 +128,34 @@ export default function TeacherPage() {
         ),
     [supabase],
   );
+
+  // Polling fallback for when realtime is broken
+  useEffect(() => {
+    let cancelled = false;
+    const POLL_MS = 4000;
+    const tick = async () => {
+      const { data, error } = await supabase
+        .from("pecs_requests")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(60);
+      if (cancelled || error || !data) return;
+      const rows = data as PecsRequest[];
+      setRequests((cur) => {
+        const byId = new Map(cur.map((r) => [r.id, r]));
+        for (const r of rows) byId.set(r.id, enrich(r, studentsRef.current, iconsRef.current));
+        return Array.from(byId.values())
+          .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
+          .slice(0, 60);
+      });
+    };
+    const t = window.setInterval(tick, POLL_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(t);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supabase]);
 
   async function setStatus(id: string, status: RequestStatus) {
     const patch: Partial<PecsRequest> = {
