@@ -520,6 +520,24 @@ body {
   transform: scale(1.1);
 }
 
+/* Form input */
+.input {
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--card-border);
+  background: white;
+  color: var(--fg);
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition: border-color 100ms ease, box-shadow 100ms ease;
+}
+.input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
 /* Wrong-drop shake */
 @keyframes tile-shake {
   0%, 100% { transform: translateX(0); }
