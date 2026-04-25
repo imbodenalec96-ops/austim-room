@@ -88,18 +88,23 @@ export default function StudentDevice({ student, icons, blocks }: Props) {
   }, [icons, activeCat]);
 
   function pick(icon: PecsIcon) {
-    if (quickSend) {
-      void sendIcon(icon, null);
-      return;
-    }
+    // Carrier icons (I want / I see / I have / …) are never standalone
+    // requests — they replace the sentence-starter and wait for a
+    // non-carrier icon. This holds in BOTH modes, otherwise quick-send
+    // would send "Leo wants I see" which makes no sense.
     if (icon.category === "carrier") {
-      // Replace the sentence-starter ("I want" → "I see")
       setSelectedCarrier(icon);
       void speak(icon.label);
       return;
     }
+    if (quickSend) {
+      // Send immediately using whatever carrier is currently set
+      // (or fall back to "I want").
+      void sendIcon(icon, selectedCarrier);
+      return;
+    }
     setSelectedIcon(icon);
-    speak(icon.label);
+    void speak(icon.label);
   }
 
   function clear() {
@@ -216,7 +221,11 @@ export default function StudentDevice({ student, icons, blocks }: Props) {
       {/* Mode toggle */}
       <section className="flex flex-wrap items-center justify-between gap-2 mb-3">
         <p className="text-xs uppercase tracking-widest text-[var(--muted)]">
-          {quickSend ? "Tap a picture to ask." : "Tap a picture, then press Send."}
+          {quickSend
+            ? selectedCarrier
+              ? `Now tap what you want to say about "${selectedCarrier.label}".`
+              : "Tap a picture to ask."
+            : "Tap a picture, then press Send."}
         </p>
         <label className="chip cursor-pointer" title="Quick send: one tap = immediate request (no sentence builder)">
           <input
@@ -229,8 +238,10 @@ export default function StudentDevice({ student, icons, blocks }: Props) {
         </label>
       </section>
 
-      {/* Sentence builder (only in non-quick mode) */}
-      {!quickSend && (
+      {/* Sentence builder. Always shown in sentence-mode; in quick-send
+          mode it appears only after a carrier is picked, to show
+          "I see ___" while waiting for the object tap that will send. */}
+      {(!quickSend || selectedCarrier) && (
         <section className="mb-4">
           <p className="text-xs uppercase tracking-widest text-[var(--muted)] mb-1">
             Make a sentence
@@ -277,14 +288,16 @@ export default function StudentDevice({ student, icons, blocks }: Props) {
                   Clear
                 </button>
               )}
-              <button
-                onClick={send}
-                disabled={!selectedIcon || sending}
-                className="btn"
-                style={{ minWidth: 140 }}
-              >
-                {sending ? "Sending…" : "Send →"}
-              </button>
+              {!quickSend && (
+                <button
+                  onClick={send}
+                  disabled={!selectedIcon || sending}
+                  className="btn"
+                  style={{ minWidth: 140 }}
+                >
+                  {sending ? "Sending…" : "Send →"}
+                </button>
+              )}
             </div>
           </div>
         </section>
