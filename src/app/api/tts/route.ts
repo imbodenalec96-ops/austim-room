@@ -12,7 +12,10 @@
  */
 
 const ELEVENLABS_BASE = "https://api.elevenlabs.io/v1";
-const DEFAULT_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"; // Rachel
+// Sarah — "Mature, Reassuring, Confident". Premade voice (works on the
+// free tier), and the description fits autism-classroom announcements
+// perfectly. Override per-call by passing `voiceId` in the request body.
+const DEFAULT_VOICE_ID = "EXAVITQu4vr4xnSDxMaL";
 // eleven_turbo_v2_5 is fast (~300ms latency) and high-quality. Good for
 // short classroom announcements.
 const DEFAULT_MODEL = "eleven_turbo_v2_5";
