@@ -7,10 +7,13 @@ import { Avatar } from "@/components/Avatar";
 import { getSupabase } from "@/lib/supabase/client";
 import { ConnectionPill, useChannelStatus } from "@/lib/useConnection";
 import {
+  blocksForToday,
+  DAY_NAMES,
   findCurrentBlock,
   findNextBlock,
   formatTime,
   minutesUntil,
+  pickDayOfWeek,
 } from "@/lib/schedule";
 import type {
   PecsIcon,
@@ -144,6 +147,8 @@ export default function BoardPage() {
 
   const current = findCurrentBlock(blocks, now);
   const next = findNextBlock(blocks, now);
+  const todaysBlocks = blocksForToday(blocks, now);
+  const dayInfo = pickDayOfWeek(blocks, now);
   const minsToTransition = current ? minutesUntil(current.ends_at, now) : null;
   const isTransitioning =
     minsToTransition !== null && minsToTransition <= TRANSITION_WARN_MIN;
@@ -336,12 +341,14 @@ export default function BoardPage() {
       {/* Whole day strip */}
       <section className="tv-card p-5">
         <p className="text-lg uppercase tracking-widest text-white/60 mb-3">
-          Today
+          {dayInfo.isFallback
+            ? `Today · No ${DAY_NAMES[now.getDay()]} plan — showing ${DAY_NAMES[dayInfo.dow]}`
+            : "Today"}
         </p>
         <div className="flex gap-2 overflow-x-auto pb-2">
-          {blocks.map((b) => {
+          {todaysBlocks.map((b) => {
             const isCurrent = current?.id === b.id;
-            const isPast = b.ends_at <= toHM(now);
+            const isPast = !dayInfo.isFallback && b.ends_at <= toHM(now);
             return (
               <div
                 key={b.id}

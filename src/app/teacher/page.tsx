@@ -8,10 +8,13 @@ import { Avatar } from "@/components/Avatar";
 import { getSupabase } from "@/lib/supabase/client";
 import { ConnectionPill, useChannelStatus } from "@/lib/useConnection";
 import {
+  blocksForToday,
+  DAY_NAMES,
   findCurrentBlock,
   findNextBlock,
   formatTime,
   minutesUntil,
+  pickDayOfWeek,
 } from "@/lib/schedule";
 import type {
   PecsIcon,
@@ -147,6 +150,8 @@ export default function TeacherPage() {
 
   const current = findCurrentBlock(blocks, now);
   const next = findNextBlock(blocks, now);
+  const todaysBlocks = blocksForToday(blocks, now);
+  const dayInfo = pickDayOfWeek(blocks, now);
   const minsLeft = current ? minutesUntil(current.ends_at, now) : null;
 
   // Per-student today counts
@@ -190,7 +195,9 @@ export default function TeacherPage() {
       <section className="card p-4">
         <div className="flex items-center justify-between mb-3">
           <p className="text-sm uppercase tracking-widest text-[var(--muted)]">
-            Today
+            {dayInfo.isFallback
+              ? `No ${DAY_NAMES[now.getDay()]} plan — showing ${DAY_NAMES[dayInfo.dow]}`
+              : "Today"}
           </p>
           {current && minsLeft !== null && (
             <p className="text-sm text-[var(--muted)]">
@@ -205,7 +212,7 @@ export default function TeacherPage() {
           )}
         </div>
         <div className="flex gap-2 overflow-x-auto pb-1">
-          {blocks.map((b) => {
+          {todaysBlocks.map((b) => {
             const isCurrent = current?.id === b.id;
             return (
               <div
