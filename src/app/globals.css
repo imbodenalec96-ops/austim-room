@@ -1,26 +1,128 @@
 @import "tailwindcss";
 
+/* Autism-friendly design tokens.
+   - Soft, low-saturation palette
+   - High readability
+   - Calm and warm, not clinical */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #f8f6f1;
+  --fg: #2b2b2b;
+  --muted: #6b6b6b;
+  --card: #ffffff;
+  --card-border: #ece7dc;
+  --accent: #4f7a9b;     /* calm steel blue */
+  --accent-soft: #cfe0ee;
+  --good: #6ea36e;
+  --warn: #d4a04a;
+  --bad:  #c76b6b;
+  --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04);
+  --radius-lg: 18px;
+  --radius-xl: 28px;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--bg);
+  --color-foreground: var(--fg);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-good: var(--good);
+  --color-warn: var(--warn);
+  --color-bad:  var(--bad);
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+html, body { height: 100%; }
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Reduce motion respects user preference automatically */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* Card */
+.card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+
+/* Big touch target button */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 56px;
+  padding: 0.75rem 1.25rem;
+  border-radius: var(--radius-lg);
+  background: var(--accent);
+  color: white;
+  font-weight: 600;
+  font-size: 1.05rem;
+  border: none;
+  cursor: pointer;
+  transition: transform 80ms ease, filter 80ms ease;
+}
+.btn:hover { filter: brightness(1.05); }
+.btn:active { transform: translateY(1px); }
+.btn-soft {
+  background: var(--accent-soft);
+  color: #1f3a4d;
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--fg);
+  border: 1px solid var(--card-border);
+}
+
+/* TV board specific - very large, high contrast */
+.tv-bg {
+  background: #0f1722;
+  color: #ffffff;
+}
+.tv-bg.calm { background: #1a2330; }
+.tv-card {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 24px;
+}
+
+/* PECS tile */
+.pecs-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: white;
+  border: 2px solid var(--card-border);
+  border-radius: var(--radius-xl);
+  padding: 1.25rem 0.75rem;
+  min-height: 160px;
+  font-weight: 700;
+  font-size: 1.125rem;
+  cursor: pointer;
+  transition: transform 100ms ease, border-color 100ms ease;
+  user-select: none;
+}
+.pecs-tile:hover { border-color: var(--accent); }
+.pecs-tile:active { transform: scale(0.98); }
+.pecs-emoji { font-size: 4rem; line-height: 1; }
+
+/* Banner pulse for new PECS request on the TV */
+@keyframes pecs-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(255, 200, 100, 0.55); }
+  70%  { box-shadow: 0 0 0 28px rgba(255, 200, 100, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 200, 100, 0); }
+}
+.pecs-banner {
+  animation: pecs-pulse 1.6s ease-out 1;
 }
