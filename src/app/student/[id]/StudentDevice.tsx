@@ -124,6 +124,9 @@ export default function StudentDevice({ student, icons, blocks }: Props) {
         </div>
         <div className="flex items-center gap-2">
           <ConnectionPill status={status} />
+          <Link href={`/student/${student.id}/boards`} className="btn btn-soft btn-sm">
+            🧩 Boards
+          </Link>
           <Link href="/" className="btn btn-ghost btn-sm">
             ← Home
           </Link>

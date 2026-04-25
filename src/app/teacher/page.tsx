@@ -169,6 +169,9 @@ export default function TeacherPage() {
           <Link href="/teacher/students" className="btn btn-ghost btn-sm">
             👥 Roster
           </Link>
+          <Link href="/teacher/boards" className="btn btn-ghost btn-sm">
+            🧩 Boards
+          </Link>
           <Link href="/board" className="btn btn-soft btn-sm">
             📺 TV Board
           </Link>

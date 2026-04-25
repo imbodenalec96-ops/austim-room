@@ -75,6 +75,85 @@ export interface PecsRequest {
   notes: string | null;
 }
 
+// ---------- Matching Boards --------------------------------------------
+
+export type BoardKind =
+  | "colors"
+  | "shapes"
+  | "count"
+  | "alphabet"
+  | "weather"
+  | "sort"
+  | "picture-word"
+  | "face-parts"
+  | "transportation"
+  | "fruits-veg"
+  | "planets"
+  | "dinosaurs";
+
+export type FeedbackMode = "instant" | "delayed" | "none";
+
+export interface BoardSettings {
+  errorless: boolean;
+  audioOnTap: boolean;
+  soundOnCorrect: boolean;
+  feedbackOn: FeedbackMode;
+  showLabels: boolean;
+}
+
+export interface BoardZone {
+  id: string;
+  label: string;
+  kind?: "default" | "large";
+  color?: string;
+  emoji?: string;
+  image_url?: string;
+}
+
+export interface BoardTile {
+  id: string;
+  label: string;
+  color?: string;
+  emoji?: string;
+  count?: number;
+  image_url?: string;
+  audio_url?: string;
+  correctZoneId: string;
+}
+
+export interface BoardLayout {
+  settings: BoardSettings;
+  zones: BoardZone[];
+  tiles: BoardTile[];
+}
+
+export interface Board {
+  id: string;
+  classroom_id: string;
+  title: string;
+  kind: BoardKind;
+  background: string | null;
+  layout: BoardLayout;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface BoardAttempt {
+  id: string;
+  board_id: string;
+  student_id: string;
+  completed: boolean;
+  correct_count: number;
+  incorrect_count: number;
+  duration_sec: number;
+  prompt_level: string | null;
+  independence_level: number | null;
+  errorless: boolean;
+  audio_used: boolean;
+  notes: string | null;
+  created_at: string;
+}
+
 export interface Assignment {
   id: string;
   student_id: string;

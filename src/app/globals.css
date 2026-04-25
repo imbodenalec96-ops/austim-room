@@ -332,3 +332,200 @@ body {
   100% { transform: scale(1); }
 }
 .chip-active { animation: chip-pop 220ms ease-out 1; }
+
+/* =========================================================================
+   Matching Board — feels like a laminated classroom activity board
+   ========================================================================= */
+
+.board-frame {
+  position: relative;
+  border-radius: 28px;
+  padding: 18px 18px 22px;
+  border: 1px solid var(--card-border);
+  box-shadow:
+    inset 0 0 0 6px rgba(255,255,255,0.65),
+    var(--shadow);
+  /* Subtle paper texture via diagonal gradient */
+  background-image:
+    linear-gradient(180deg, rgba(255,255,255,0.0), rgba(0,0,0,0.02));
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.board-frame-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 10px 14px;
+}
+.board-frame-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.board-tag {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
+/* Zone grid */
+.board-zones {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.board-zone {
+  background: white;
+  border: 3px dashed color-mix(in oklab, var(--card-border) 90%, white);
+  border-radius: 22px;
+  min-height: 140px;
+  padding: 10px 10px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: border-color 120ms ease, background 160ms ease, transform 160ms ease;
+}
+.board-zone.is-large {
+  min-height: 200px;
+  padding: 14px;
+  border-style: solid;
+  background: var(--bg-soft);
+}
+.board-zone-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+.board-zone-emoji { font-size: 1.4rem; }
+.board-zone-label { color: var(--fg); }
+
+.board-zone-slot {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.board-zone-slot.is-single {
+  /* one big tile centered */
+}
+.board-zone-slot.is-grid {
+  align-items: flex-start;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 6px 0;
+}
+
+.board-zone-tile {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border-radius: 16px;
+  padding: 8px 10px;
+  min-width: 70px;
+  min-height: 70px;
+  border: 1px solid rgba(0,0,0,0.08);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.06);
+  animation: token-pop 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Flash on a zone after a drop */
+@keyframes zone-flash-good {
+  0%   { box-shadow: 0 0 0 0 rgba(95,155,95,0.0); border-color: var(--good); }
+  40%  { box-shadow: 0 0 0 16px rgba(95,155,95,0.18); }
+  100% { box-shadow: 0 0 0 0 rgba(95,155,95,0); }
+}
+@keyframes zone-flash-bad {
+  0%   { box-shadow: 0 0 0 0 rgba(199,107,107,0); border-color: var(--bad); }
+  40%  { box-shadow: 0 0 0 16px rgba(199,107,107,0.18); }
+  100% { box-shadow: 0 0 0 0 rgba(199,107,107,0); }
+}
+.board-zone.flash-good { animation: zone-flash-good 700ms ease-out 1; border-color: var(--good); }
+.board-zone.flash-bad  { animation: zone-flash-bad  700ms ease-out 1; border-color: var(--bad);  }
+
+/* Tile bank */
+.board-bank-label {
+  margin: 4px 12px;
+  font-size: 0.75rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+.board-bank {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px;
+  min-height: 120px;
+  background: var(--bg-soft);
+  border-radius: 20px;
+  border: 1px solid var(--card-border);
+}
+.board-bank-empty {
+  width: 100%;
+  text-align: center;
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: var(--good);
+  padding: 16px;
+}
+
+/* Tile */
+.board-tile {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 96px;
+  height: 96px;
+  border-radius: 18px;
+  border: 1px solid rgba(0,0,0,0.08);
+  background: white;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.06), 0 6px 14px rgba(0,0,0,0.08);
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: grab;
+  touch-action: none; /* critical: stop iOS scrolling while dragging */
+  transition: transform 100ms ease, box-shadow 100ms ease;
+}
+.board-tile:active { cursor: grabbing; }
+.board-tile:hover { transform: translateY(-1px); }
+.board-tile.is-dragging { transform: scale(1.05); }
+.board-tile-emoji { font-size: 2.4rem; line-height: 1; }
+.board-tile-image { width: 60px; height: 60px; object-fit: contain; }
+.board-tile-letter { font-size: 2.6rem; line-height: 1; font-weight: 800; }
+.board-tile-label { font-size: 0.85rem; color: inherit; opacity: 0.85; }
+
+/* Floating ghost */
+.board-tile-ghost {
+  position: fixed;
+  z-index: 60;
+  pointer-events: none;
+  cursor: grabbing;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.18);
+  transform: scale(1.1);
+}
+
+/* Wrong-drop shake */
+@keyframes tile-shake {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-6px); }
+  40%      { transform: translateX(6px); }
+  60%      { transform: translateX(-4px); }
+  80%      { transform: translateX(4px); }
+}
+.board-tile.is-shaking { animation: tile-shake 360ms ease-in-out 1; }
