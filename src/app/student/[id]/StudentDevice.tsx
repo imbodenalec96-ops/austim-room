@@ -307,8 +307,6 @@ export default function StudentDevice({ student, icons, blocks }: Props) {
               aria-label={`Pick ${icon.label}`}
               style={
                 {
-                  borderColor: selected ? "var(--accent)" : undefined,
-                  boxShadow: selected ? "var(--shadow)" : undefined,
                   ["--cat-color" as string]: CATEGORY_COLOR[icon.category],
                   ["--i" as string]: index,
                 } as React.CSSProperties
@@ -317,7 +315,7 @@ export default function StudentDevice({ student, icons, blocks }: Props) {
               <span className="pecs-emoji" aria-hidden>
                 {icon.emoji ?? "🖼️"}
               </span>
-              <span>{icon.label}</span>
+              <span className="pecs-tile-label">{icon.label}</span>
             </button>
           );
         })}

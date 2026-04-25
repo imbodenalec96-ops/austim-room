@@ -146,37 +146,68 @@ body {
   backdrop-filter: blur(8px);
 }
 
-/* ---------- PECS tile --------------------------------------------------- */
+/* ---------- PECS tile ---------------------------------------------------
+   Mimics a laminated PECS card: cream background, bold black-ish border,
+   prominent label, near-square aspect. Per-category colored stripe sits
+   at the top so kids can scan by category. */
 .pecs-tile {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  background: white;
-  border: 2px solid var(--card-border);
-  border-radius: var(--radius-xl);
-  padding: 1.25rem 0.75rem;
-  min-height: 170px;
-  font-weight: 700;
-  font-size: 1.125rem;
+  justify-content: space-between;
+  gap: 0.4rem;
+  /* Cream "cardstock" background like the reference boards */
+  background: #fff8e1;
+  border: 3px solid #1f2937;
+  border-radius: 14px;
+  padding: 1rem 0.6rem 0.75rem;
+  min-height: 168px;
+  /* Square-ish — matches a printed PECS card */
+  aspect-ratio: 1 / 1.05;
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: #1f2937;
   cursor: pointer;
-  transition: transform 100ms ease, border-color 100ms ease, box-shadow 100ms ease;
+  transition: transform 90ms ease, box-shadow 120ms ease, background 120ms ease;
   user-select: none;
   position: relative;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.04), 0 4px 0 rgba(0,0,0,0.06);
+  text-align: center;
+  line-height: 1.15;
 }
-.pecs-tile:hover { border-color: var(--accent); box-shadow: var(--shadow); }
-.pecs-tile:active { transform: scale(0.97); }
+.pecs-tile:hover {
+  background: #fff3c4;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.05), 0 6px 0 rgba(0,0,0,0.08);
+}
+.pecs-tile:active {
+  transform: translateY(2px) scale(0.99);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.05), 0 1px 0 rgba(0,0,0,0.06);
+}
+.pecs-tile[aria-pressed="true"] {
+  background: #ffe884;
+  box-shadow: 0 0 0 4px var(--accent-soft), 0 4px 0 rgba(0,0,0,0.08);
+}
 .pecs-tile[data-cat]::before {
   content: "";
   position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 6px;
+  top: -3px; left: -3px; right: -3px;
+  height: 14px;
   background: var(--cat-color, var(--accent-soft));
-  border-top-left-radius: var(--radius-xl);
-  border-top-right-radius: var(--radius-xl);
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  border-bottom: 3px solid #1f2937;
 }
-.pecs-emoji { font-size: 4rem; line-height: 1; }
+.pecs-emoji {
+  font-size: 4.4rem;
+  line-height: 1;
+  filter: drop-shadow(0 1px 0 rgba(0,0,0,0.08));
+}
+.pecs-tile-label {
+  font-weight: 900;
+  font-size: 1.1rem;
+  letter-spacing: -0.01em;
+  color: #1f2937;
+}
 
 /* ---------- Sentence builder ------------------------------------------- */
 .sentence-strip {

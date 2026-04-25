@@ -1,13 +1,18 @@
 export type Role = "teacher" | "para" | "admin" | "parent" | "student_device";
 
 export type PecsCategory =
-  | "needs"
-  | "feelings"
-  | "actions"
-  | "people"
-  | "places"
-  | "social"
-  | "sensory";
+  | "carrier"          // sentence-starter phrases: "I want", "I see", "I feel"…
+  | "needs"            // basic needs / requests
+  | "feelings"         // emotion words
+  | "actions"          // verbs / activities
+  | "people"           // mom / dad / teacher / friend
+  | "places"           // home / classroom / playground
+  | "social"           // yes / no / please / stop / help
+  | "sensory"          // calm corner / fidget / headphones
+  | "transportation"   // car / bus / airplane / ship
+  | "food"             // apple / pizza / sandwich
+  | "care"             // brush teeth / wash hands / bath
+  | "school";          // pencil / paper / book / scissors
 
 export type RequestStatus =
   | "pending"
