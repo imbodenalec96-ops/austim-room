@@ -23,6 +23,9 @@ export default async function RosterPage() {
           <h1 className="text-3xl font-bold tracking-tight">Roster</h1>
         </div>
         <div className="flex gap-2">
+          <Link href="/teacher/students/new" className="btn">
+            + Add student
+          </Link>
           <Link href="/teacher" className="btn btn-ghost btn-sm">
             ← Dashboard
           </Link>

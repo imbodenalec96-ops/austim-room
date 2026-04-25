@@ -30,6 +30,7 @@ type Props = {
 
 const CARRIER_PHRASE = "I want";
 const COOLDOWN_MS = 4000;
+const QUICK_MODE_KEY = "pecs.quickSend";
 
 export default function StudentDevice({ student, icons, blocks }: Props) {
   const supabase = useMemo(() => getSupabase(), []);
@@ -40,6 +41,20 @@ export default function StudentDevice({ student, icons, blocks }: Props) {
   const [lastSentAt, setLastSentAt] = useState(0);
   const [confirmation, setConfirmation] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Quick send: one tap on an icon broadcasts immediately, no sentence build.
+  // Default ON for an autism classroom — simpler, more authentic to PECS Phase 1.
+  const [quickSend, setQuickSend] = useState<boolean>(true);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const v = window.localStorage.getItem(QUICK_MODE_KEY);
+    if (v === "0") setQuickSend(false);
+  }, []);
+  function setQuickPersist(v: boolean) {
+    setQuickSend(v);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(QUICK_MODE_KEY, v ? "1" : "0");
+    }
+  }
 
   // Tick clock so schedule updates without a refresh
   useEffect(() => {
@@ -68,6 +83,10 @@ export default function StudentDevice({ student, icons, blocks }: Props) {
   }, [icons, activeCat]);
 
   function pick(icon: PecsIcon) {
+    if (quickSend) {
+      void sendIcon(icon);
+      return;
+    }
     setSelectedIcon(icon);
     speak(icon.label);
   }
@@ -78,10 +97,13 @@ export default function StudentDevice({ student, icons, blocks }: Props) {
 
   async function send() {
     if (!selectedIcon) return;
+    await sendIcon(selectedIcon);
+  }
+
+  async function sendIcon(icon: PecsIcon) {
     if (Date.now() - lastSentAt < COOLDOWN_MS) return;
     setSending(true);
     setError(null);
-    const icon = selectedIcon;
     const { error: e } = await supabase
       .from("pecs_requests")
       .insert({ student_id: student.id, icon_id: icon.id, status: "pending" });
@@ -166,51 +188,69 @@ export default function StudentDevice({ student, icons, blocks }: Props) {
         </div>
       </section>
 
-      {/* Sentence builder */}
-      <section className="mb-4">
-        <p className="text-xs uppercase tracking-widest text-[var(--muted)] mb-1">
-          Make a sentence
+      {/* Mode toggle */}
+      <section className="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <p className="text-xs uppercase tracking-widest text-[var(--muted)]">
+          {quickSend ? "Tap a picture to ask." : "Tap a picture, then press Send."}
         </p>
-        <div className="sentence-strip">
-          <span className="sentence-token text-2xl bg-white">
-            <span className="text-3xl" aria-hidden>👋</span>
-            <span>{CARRIER_PHRASE}</span>
-          </span>
-          {selectedIcon ? (
-            <span
-              key={selectedIcon.id}
-              className="sentence-token token-pop"
-              style={{
-                background: CATEGORY_COLOR[selectedIcon.category] + "55",
-              }}
-            >
-              <span className="text-3xl" aria-hidden>
-                {selectedIcon.emoji ?? "🖼️"}
-              </span>
-              <span>{selectedIcon.label}</span>
-            </span>
-          ) : (
-            <span className="text-[var(--muted)] italic">
-              Choose a picture below…
-            </span>
-          )}
-          <div className="ml-auto flex gap-2">
-            {selectedIcon && (
-              <button onClick={clear} className="btn btn-ghost">
-                Clear
-              </button>
-            )}
-            <button
-              onClick={send}
-              disabled={!selectedIcon || sending}
-              className="btn"
-              style={{ minWidth: 140 }}
-            >
-              {sending ? "Sending…" : "Send →"}
-            </button>
-          </div>
-        </div>
+        <label className="chip cursor-pointer" title="Quick send: one tap = immediate request (no sentence builder)">
+          <input
+            type="checkbox"
+            className="mr-1"
+            checked={quickSend}
+            onChange={(e) => setQuickPersist(e.target.checked)}
+          />
+          Quick send
+        </label>
       </section>
+
+      {/* Sentence builder (only in non-quick mode) */}
+      {!quickSend && (
+        <section className="mb-4">
+          <p className="text-xs uppercase tracking-widest text-[var(--muted)] mb-1">
+            Make a sentence
+          </p>
+          <div className="sentence-strip">
+            <span className="sentence-token text-2xl bg-white">
+              <span className="text-3xl" aria-hidden>👋</span>
+              <span>{CARRIER_PHRASE}</span>
+            </span>
+            {selectedIcon ? (
+              <span
+                key={selectedIcon.id}
+                className="sentence-token token-pop"
+                style={{
+                  background: CATEGORY_COLOR[selectedIcon.category] + "55",
+                }}
+              >
+                <span className="text-3xl" aria-hidden>
+                  {selectedIcon.emoji ?? "🖼️"}
+                </span>
+                <span>{selectedIcon.label}</span>
+              </span>
+            ) : (
+              <span className="text-[var(--muted)] italic">
+                Choose a picture below…
+              </span>
+            )}
+            <div className="ml-auto flex gap-2">
+              {selectedIcon && (
+                <button onClick={clear} className="btn btn-ghost">
+                  Clear
+                </button>
+              )}
+              <button
+                onClick={send}
+                disabled={!selectedIcon || sending}
+                className="btn"
+                style={{ minWidth: 140 }}
+              >
+                {sending ? "Sending…" : "Send →"}
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
 
       <div
         role="status"

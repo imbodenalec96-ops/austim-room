@@ -73,6 +73,12 @@ export default async function StudentProfilePage(props: {
           >
             📊 Grades
           </Link>
+          <Link
+            href={`/teacher/students/${student.id}/edit`}
+            className="btn btn-ghost btn-sm"
+          >
+            Edit
+          </Link>
           <Link href={`/student/${student.id}`} className="btn btn-soft btn-sm">
             🪄 Open device view
           </Link>
