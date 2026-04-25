@@ -2,6 +2,7 @@ export type Role = "teacher" | "para" | "admin" | "parent" | "student_device";
 
 export type PecsCategory =
   | "carrier"          // sentence-starter phrases: "I want", "I see", "I feel"…
+  | "pronouns"         // I / you / we / he / she / they / me / my
   | "needs"            // basic needs / requests
   | "feelings"         // emotion words
   | "actions"          // verbs / activities
@@ -12,7 +13,13 @@ export type PecsCategory =
   | "transportation"   // car / bus / airplane / ship
   | "food"             // apple / pizza / sandwich
   | "care"             // brush teeth / wash hands / bath
-  | "school";          // pencil / paper / book / scissors
+  | "school"           // pencil / paper / book / scissors
+  | "subjects"         // reading / math / writing / PE / music / art
+  | "body"             // head / eyes / ears / nose / hands / feet
+  | "clothing"         // shirt / pants / shoes / socks / jacket / hat
+  | "weather"          // sunny / cloudy / rainy / snowy / windy
+  | "time"             // now / later / first / then / morning / night
+  | "rewards";         // sticker / prize box / token / puzzle
 
 export type RequestStatus =
   | "pending"
