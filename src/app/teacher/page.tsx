@@ -378,16 +378,8 @@ export default function TeacherPage() {
   );
 }
 
-// Same third-person conjugation used on the board: "Leo wants snack",
-// "Leo sees snack", "Leo has snack", … Falls back to "<Name>: <carrier>
-// <object>" for unknown carriers.
-const CARRIER_VERB: Record<string, string> = {
-  "i want": "wants", "i see": "sees", "i have": "has", "i hear": "hears",
-  "i feel": "feels", "i need": "needs", "i like": "likes", "i love": "loves",
-  "i make": "makes", "i go": "goes", "i do": "does", "i say": "says",
-  "i think": "thinks", "i help": "helps",
-};
-
+// Match the board: render the student's first-person sentence.
+//   "Leo says I want snack"  /  "Leo says I see snack"
 function teacherSentence(
   name: string | undefined,
   carrier: string | null | undefined,
@@ -395,10 +387,8 @@ function teacherSentence(
 ): string {
   const n = name ?? "Unknown";
   const l = label ?? "—";
-  const c = (carrier ?? "I want").trim();
-  const verb = CARRIER_VERB[c.toLowerCase()];
-  if (verb) return `${n} ${verb} ${l}`;
-  return `${n}: ${c} ${l}`;
+  const c = (carrier ?? "I want").trim() || "I want";
+  return `${n} says ${c} ${l}`;
 }
 
 function recentTail(
@@ -406,10 +396,8 @@ function recentTail(
   label: string | undefined,
 ): string {
   const l = label ?? "—";
-  const c = (carrier ?? "I want").trim();
-  const verb = CARRIER_VERB[c.toLowerCase()];
-  if (verb) return `${verb} ${l}`;
-  return `${c} ${l}`;
+  const c = (carrier ?? "I want").trim() || "I want";
+  return `says ${c} ${l}`;
 }
 
 function enrich(

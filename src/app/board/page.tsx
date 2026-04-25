@@ -438,44 +438,22 @@ export default function BoardPage() {
 }
 
 /**
- * Carrier conjugation: "I want" → "wants", "I see" → "sees", etc.
- * For any carrier we don't know how to conjugate, fall back to the
- * "<name>: <carrier> <object>" envelope so it still reads sensibly.
+ * The board reads the student's sentence in their own voice — same
+ * grammar the student hears on their device.
  *
- *   "Leo" + "I want" + "water"  → "Leo wants water"
- *   "Leo" + "I see"  + "water"  → "Leo sees water"
- *   "Leo" + "I have" + "water"  → "Leo has water"
+ *   student picked: "I want" + "snack"  → board says: "Leo says I want snack"
+ *   student picked: "I see"  + "snack"  → board says: "Leo says I see snack"
+ *
+ * Using "<name> says <carrier> <object>" keeps grammar consistent for
+ * every carrier without third-person verb-conjugation gymnastics.
  */
-const CARRIER_VERB: Record<string, string> = {
-  "i want": "wants",
-  "i see": "sees",
-  "i have": "has",
-  "i hear": "hears",
-  "i feel": "feels",
-  "i need": "needs",
-  "i like": "likes",
-  "i love": "loves",
-  "i make": "makes",
-  "i go": "goes",
-  "i do": "does",
-  "i say": "says",
-  "i think": "thinks",
-  "i help": "helps",
-};
-
-function naturalSentence(name: string, carrier: string, label: string): string {
-  const verb = CARRIER_VERB[carrier.trim().toLowerCase()];
-  if (verb) return `${name} ${verb} ${label}`;
-  // Unknown carrier — preserve it inline using a "says" envelope
-  return `${name}: ${carrier} ${label}`;
-}
-
 function announcementFor(name: string, carrier: string, label: string): string {
-  return naturalSentence(name, carrier, label);
+  const c = carrier.trim() || "I want";
+  return `${name} says ${c} ${label}`;
 }
 
 function bannerTextFor(name: string, carrier: string, label: string): string {
-  return naturalSentence(name, carrier, label);
+  return announcementFor(name, carrier, label);
 }
 
 function toHM(date: Date) {
