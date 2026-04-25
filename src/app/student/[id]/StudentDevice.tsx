@@ -117,14 +117,25 @@ export default function StudentDevice({ student, icons, blocks }: Props) {
     setSending(true);
     setError(null);
     const phrase = carrier?.label ?? DEFAULT_CARRIER;
-    const { error: e } = await supabase
-      .from("pecs_requests")
-      .insert({
+
+    // Try with carrier first. If the column doesn't exist yet (the
+    // 006_carrier.sql migration hasn't been run), fall back to inserting
+    // without it — the board will default to "wants" naturally.
+    let { error: e } = await supabase.from("pecs_requests").insert({
+      student_id: student.id,
+      icon_id: icon.id,
+      status: "pending",
+      carrier: phrase,
+    });
+    if (e && /carrier/i.test(e.message) && /does not exist/i.test(e.message)) {
+      const fallback = await supabase.from("pecs_requests").insert({
         student_id: student.id,
         icon_id: icon.id,
         status: "pending",
-        carrier: phrase,
       });
+      e = fallback.error;
+    }
+
     setSending(false);
     if (e) {
       setError(e.message);
