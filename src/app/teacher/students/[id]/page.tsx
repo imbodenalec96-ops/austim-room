@@ -67,6 +67,12 @@ export default async function StudentProfilePage(props: {
           </div>
         </div>
         <div className="flex gap-2 flex-wrap">
+          <Link
+            href={`/teacher/students/${student.id}/grades`}
+            className="btn btn-sm"
+          >
+            📊 Grades
+          </Link>
           <Link href={`/student/${student.id}`} className="btn btn-soft btn-sm">
             🪄 Open device view
           </Link>

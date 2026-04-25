@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Avatar } from "@/components/Avatar";
@@ -171,6 +173,9 @@ export default function TeacherPage() {
           </Link>
           <Link href="/teacher/boards" className="btn btn-ghost btn-sm">
             🧩 Boards
+          </Link>
+          <Link href="/teacher/gradebook" className="btn btn-ghost btn-sm">
+            📊 Gradebook
           </Link>
           <Link href="/board" className="btn btn-soft btn-sm">
             📺 TV Board
