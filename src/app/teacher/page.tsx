@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Avatar } from "@/components/Avatar";
 import { getSupabase } from "@/lib/supabase/client";
+import { carrierFor } from "@/lib/carrier";
 import { ConnectionPill, useChannelState } from "@/lib/useConnection";
 import {
   blocksForToday,
@@ -354,7 +355,7 @@ export default function TeacherPage() {
                   {r.student?.full_name ?? "Unknown"}
                 </span>
                 <span className="text-[var(--muted)] truncate">
-                  {recentTail(r.carrier, r.icon?.label)}
+                  {recentTail(carrierFor(r), r.icon?.label)}
                 </span>
               </div>
               <span
@@ -444,7 +445,7 @@ function RequestCard({
         </span>
         <div className="flex-1 min-w-0">
           <p className="text-lg font-semibold truncate">
-            {teacherSentence(req.student?.full_name, req.carrier, req.icon?.label)}
+            {teacherSentence(req.student?.full_name, carrierFor(req), req.icon?.label)}
           </p>
           <p
             className="text-sm"

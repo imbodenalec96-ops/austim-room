@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Avatar } from "@/components/Avatar";
 import { getSupabase } from "@/lib/supabase/client";
 import { speak } from "@/lib/tts";
+import { encodeCarrierIntoNotes } from "@/lib/carrier";
 import { ConnectionPill, useChannelState } from "@/lib/useConnection";
 import {
   CATEGORY_COLOR,
@@ -123,18 +124,23 @@ export default function StudentDevice({ student, icons, blocks }: Props) {
     setError(null);
     const phrase = carrier?.label ?? DEFAULT_CARRIER;
 
-    // Try with carrier first. If the column doesn't exist yet (the
-    // 006_carrier.sql migration hasn't been run), fall back to inserting
-    // without it — the board will default to "wants" naturally.
+    // Always also encode the carrier into `notes` as a side channel —
+    // that way the board can recover it even if the carrier column
+    // doesn't exist yet (or PostgREST's schema cache hasn't picked it
+    // up after the migration). Once the column is fully live the
+    // direct value wins; the encoded notes are belt-and-suspenders.
+    const encodedNotes = encodeCarrierIntoNotes(phrase, null);
+
+    // Try with the dedicated carrier column first.
     let { error: e } = await supabase.from("pecs_requests").insert({
       student_id: student.id,
       icon_id: icon.id,
       status: "pending",
       carrier: phrase,
+      notes: encodedNotes,
     });
-    // Match both possible "missing column" errors:
-    //   - PostgreSQL DDL: "column \"carrier\" does not exist"
-    //   - PostgREST schema cache: "Could not find the 'carrier' column..."
+    // If the carrier column truly doesn't exist (or is missing from the
+    // schema cache), retry with just the notes encoding.
     if (
       e &&
       /carrier/i.test(e.message) &&
@@ -144,6 +150,7 @@ export default function StudentDevice({ student, icons, blocks }: Props) {
         student_id: student.id,
         icon_id: icon.id,
         status: "pending",
+        notes: encodedNotes,
       });
       e = fallback.error;
     }

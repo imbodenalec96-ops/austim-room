@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { getSupabase } from "@/lib/supabase/client";
 import { speak } from "@/lib/tts";
+import { carrierFor } from "@/lib/carrier";
 import { ConnectionPill, useChannelState } from "@/lib/useConnection";
 import {
   blocksForToday,
@@ -102,7 +103,7 @@ export default function BoardPage() {
     const student = studentsRef.current.find((s) => s.id === req.student_id);
     const icon = iconsRef.current.find((i) => i.id === req.icon_id);
     if (!student || !icon) return;
-    const carrier = (req.carrier ?? "I want").trim();
+    const carrier = carrierFor(req);
     const a: ActiveAlert = {
       id: req.id,
       studentId: student.id,
