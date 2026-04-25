@@ -206,6 +206,7 @@ export default function BoardPage() {
                 photoUrl={a.studentPhoto}
                 size={i === 0 ? 120 : 72}
                 ring
+                className={i === 0 ? "avatar-bounce" : undefined}
               />
               <div className="flex-1 min-w-0">
                 <p className="text-xl uppercase tracking-widest opacity-70">
@@ -220,7 +221,7 @@ export default function BoardPage() {
                 </p>
               </div>
               <span
-                className={i === 0 ? "text-9xl" : "text-6xl"}
+                className={`${i === 0 ? "text-9xl alert-wiggle" : "text-6xl"} inline-block`}
                 aria-hidden
               >
                 {a.iconEmoji ?? "📣"}
@@ -342,7 +343,7 @@ export default function BoardPage() {
             return (
               <div
                 key={b.id}
-                className="rounded-2xl px-4 py-3 min-w-[148px] text-center"
+                className={`rounded-2xl px-4 py-3 min-w-[148px] text-center ${isCurrent ? "current-glow" : ""}`}
                 style={{
                   background: isCurrent
                     ? "rgba(253, 224, 71, 0.95)"

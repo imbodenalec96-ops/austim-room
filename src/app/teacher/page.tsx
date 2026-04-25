@@ -202,7 +202,7 @@ export default function TeacherPage() {
             return (
               <div
                 key={b.id}
-                className="rounded-xl px-3 py-2 min-w-[120px] text-center border"
+                className={`rounded-xl px-3 py-2 min-w-[120px] text-center border ${isCurrent ? "current-glow" : ""}`}
                 style={{
                   background: isCurrent ? "var(--accent)" : "white",
                   color: isCurrent ? "white" : "var(--fg)",

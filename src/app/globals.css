@@ -227,3 +227,108 @@ body {
   100% { background: rgba(212,160,74,0.20); }
 }
 .transition-warn { animation: transition-flash 1.4s ease-in-out infinite; }
+
+/* ---------- Extra animations ------------------------------------------- */
+
+/* Sentence builder token pops in with a spring */
+@keyframes token-pop {
+  0%   { transform: scale(0.55); opacity: 0; }
+  70%  { transform: scale(1.06); opacity: 1; }
+  100% { transform: scale(1);    opacity: 1; }
+}
+.token-pop { animation: token-pop 280ms cubic-bezier(0.34, 1.56, 0.64, 1) 1; }
+
+/* PECS grid: subtle staggered rise on first paint.
+   Components set --i inline (the tile index) for the stagger. */
+@keyframes tile-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.tile-rise {
+  animation: tile-rise 320ms ease-out both;
+  animation-delay: calc(var(--i, 0) * 22ms);
+}
+
+/* Avatar gentle bounce on alert entry */
+@keyframes avatar-bounce {
+  0%   { transform: scale(0.6); opacity: 0; }
+  60%  { transform: scale(1.10); opacity: 1; }
+  80%  { transform: scale(0.97); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.avatar-bounce { animation: avatar-bounce 480ms cubic-bezier(0.34, 1.56, 0.64, 1) 1; }
+
+/* Hero alert emoji wiggles once, gently */
+@keyframes alert-wiggle {
+  0%   { transform: rotate(0deg); }
+  25%  { transform: rotate(-6deg); }
+  50%  { transform: rotate(5deg); }
+  75%  { transform: rotate(-3deg); }
+  100% { transform: rotate(0deg); }
+}
+.alert-wiggle { animation: alert-wiggle 700ms ease-in-out 1; transform-origin: center bottom; }
+
+/* Current schedule block (day strip) gets a soft amber glow */
+@keyframes current-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(253,224,71,0.55), 0 0 0 0 rgba(253,224,71,0); }
+  50%      { box-shadow: 0 0 0 6px rgba(253,224,71,0.12), 0 0 24px 6px rgba(253,224,71,0.30); }
+}
+.current-glow { animation: current-glow 3.2s ease-in-out infinite; }
+
+/* TV board ambient — very slow drift on the radial highlights.
+   Lives on a ::before so the gradient does the moving, not the content. */
+.tv-bg::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(900px 500px at 70% 0%, rgba(120,170,210,0.18), transparent 60%),
+    radial-gradient(800px 480px at 0% 100%, rgba(120,170,210,0.14), transparent 60%);
+  animation: tv-drift 22s ease-in-out infinite alternate;
+  opacity: 0.85;
+}
+.tv-bg > * { position: relative; z-index: 1; }
+@keyframes tv-drift {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(2%, -1.5%, 0); }
+}
+
+/* Card hover lift — subtle translate */
+.card-hover { transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease; }
+.card-hover:hover { transform: translateY(-2px); }
+
+/* Done button: brief check splash overlay (toggled with a class) */
+@keyframes done-pop {
+  0%   { transform: scale(0.6); opacity: 0; }
+  60%  { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1);   opacity: 0; }
+}
+.done-pop {
+  position: relative;
+  isolation: isolate;
+}
+.done-pop::after {
+  content: "✓";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: white;
+  background: var(--good);
+  border-radius: inherit;
+  animation: done-pop 520ms ease-out 1 forwards;
+  pointer-events: none;
+}
+
+/* Chip selection ripple */
+@keyframes chip-pop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.07); }
+  100% { transform: scale(1); }
+}
+.chip-active { animation: chip-pop 220ms ease-out 1; }

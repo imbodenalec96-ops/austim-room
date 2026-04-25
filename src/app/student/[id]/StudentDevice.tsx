@@ -175,7 +175,8 @@ export default function StudentDevice({ student, icons, blocks }: Props) {
           </span>
           {selectedIcon ? (
             <span
-              className="sentence-token"
+              key={selectedIcon.id}
+              className="sentence-token token-pop"
               style={{
                 background: CATEGORY_COLOR[selectedIcon.category] + "55",
               }}
@@ -251,13 +252,13 @@ export default function StudentDevice({ student, icons, blocks }: Props) {
           gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
         }}
       >
-        {visibleIcons.map((icon) => {
+        {visibleIcons.map((icon, index) => {
           const selected = selectedIcon?.id === icon.id;
           return (
             <button
               key={icon.id}
               onClick={() => pick(icon)}
-              className="pecs-tile"
+              className="pecs-tile tile-rise"
               data-cat={icon.category}
               aria-pressed={selected}
               aria-label={`Pick ${icon.label}`}
@@ -266,6 +267,7 @@ export default function StudentDevice({ student, icons, blocks }: Props) {
                   borderColor: selected ? "var(--accent)" : undefined,
                   boxShadow: selected ? "var(--shadow)" : undefined,
                   ["--cat-color" as string]: CATEGORY_COLOR[icon.category],
+                  ["--i" as string]: index,
                 } as React.CSSProperties
               }
             >
