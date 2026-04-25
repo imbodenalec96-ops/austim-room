@@ -127,7 +127,14 @@ export default function StudentDevice({ student, icons, blocks }: Props) {
       status: "pending",
       carrier: phrase,
     });
-    if (e && /carrier/i.test(e.message) && /does not exist/i.test(e.message)) {
+    // Match both possible "missing column" errors:
+    //   - PostgreSQL DDL: "column \"carrier\" does not exist"
+    //   - PostgREST schema cache: "Could not find the 'carrier' column..."
+    if (
+      e &&
+      /carrier/i.test(e.message) &&
+      /(does not exist|could not find|schema cache)/i.test(e.message)
+    ) {
       const fallback = await supabase.from("pecs_requests").insert({
         student_id: student.id,
         icon_id: icon.id,
@@ -343,9 +350,18 @@ export default function StudentDevice({ student, icons, blocks }: Props) {
                 } as React.CSSProperties
               }
             >
-              <span className="pecs-emoji" aria-hidden>
-                {icon.emoji ?? "🖼️"}
-              </span>
+              {icon.image_url ? (
+                <img
+                  src={icon.image_url}
+                  alt=""
+                  className="pecs-image"
+                  draggable={false}
+                />
+              ) : (
+                <span className="pecs-emoji" aria-hidden>
+                  {icon.emoji ?? "🖼️"}
+                </span>
+              )}
               <span className="pecs-tile-label">{icon.label}</span>
             </button>
           );

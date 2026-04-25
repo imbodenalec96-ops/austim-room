@@ -209,6 +209,13 @@ export default function BoardPage() {
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <ConnectionPill status={conn.status} detail={conn.detail} />
+          <a
+            href="/board/present"
+            className="btn btn-soft"
+            style={{ background: "rgba(253, 224, 71, 0.95)", color: "#1f1500" }}
+          >
+            🎬 Present
+          </a>
           <button
             className="btn btn-ghost text-white border-white/30"
             onClick={() => setCalmMode((v) => !v)}

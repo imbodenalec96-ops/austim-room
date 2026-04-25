@@ -393,6 +393,15 @@ export default function ScheduleEditor({
               />
             </Field>
           </div>
+          <Field label="Slide / video link (YouTube · image · Google Slides · PDF)">
+            <input
+              className="input"
+              type="url"
+              value={draft.slide_url ?? ""}
+              onChange={(e) => patchDraft({ slide_url: e.target.value || null })}
+              placeholder="https://www.youtube.com/watch?v=… or any image / iframe URL"
+            />
+          </Field>
           <Field label="Notes">
             <textarea
               className="input"
