@@ -78,6 +78,7 @@ export interface PecsRequest {
   resolved_at: string | null;
   resolved_by: string | null;
   notes: string | null;
+  carrier: string | null;
 }
 
 // ---------- Matching Boards --------------------------------------------

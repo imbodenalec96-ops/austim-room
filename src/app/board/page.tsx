@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { getSupabase } from "@/lib/supabase/client";
+import { speak } from "@/lib/tts";
 import { ConnectionPill, useChannelState } from "@/lib/useConnection";
 import {
   blocksForToday,
@@ -29,6 +30,7 @@ type ActiveAlert = {
   studentPhoto: string | null;
   iconLabel: string;
   iconEmoji: string | null;
+  carrier: string;
   createdAt: string;
 };
 
@@ -100,6 +102,7 @@ export default function BoardPage() {
     const student = studentsRef.current.find((s) => s.id === req.student_id);
     const icon = iconsRef.current.find((i) => i.id === req.icon_id);
     if (!student || !icon) return;
+    const carrier = (req.carrier ?? "I want").trim();
     const a: ActiveAlert = {
       id: req.id,
       studentId: student.id,
@@ -107,10 +110,11 @@ export default function BoardPage() {
       studentPhoto: student.photo_url,
       iconLabel: icon.label,
       iconEmoji: icon.emoji,
+      carrier,
       createdAt: req.created_at,
     };
     setAlerts((cur) => [a, ...cur].slice(0, 4));
-    announce(`${student.full_name} wants ${icon.label}`);
+    announce(announcementFor(student.full_name, carrier, icon.label));
     window.setTimeout(() => {
       setAlerts((cur) => cur.filter((x) => x.id !== a.id));
     }, ALERT_DURATION_MS);
@@ -170,19 +174,8 @@ export default function BoardPage() {
 
   function announce(text: string) {
     if (silent) return;
-    if (typeof window === "undefined") return;
-    if (!("speechSynthesis" in window)) return;
-    try {
-      const utter = new SpeechSynthesisUtterance(text);
-      utter.rate = 0.95;
-      utter.pitch = 1.0;
-      utter.volume = 1.0;
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(utter);
-      audioReadyRef.current = true;
-    } catch {
-      /* noop */
-    }
+    audioReadyRef.current = true;
+    void speak(text);
   }
 
   const current = findCurrentBlock(blocks, now);
@@ -264,7 +257,7 @@ export default function BoardPage() {
                     i === 0 ? "text-6xl lg:text-7xl" : "text-3xl"
                   }`}
                 >
-                  {a.studentName} wants {a.iconLabel}
+                  {bannerTextFor(a.studentName, a.carrier, a.iconLabel)}
                 </p>
               </div>
               <span
@@ -434,6 +427,26 @@ export default function BoardPage() {
       />
     </main>
   );
+}
+
+/**
+ * "Leo" + "I want" + "water"   → "Leo wants water"
+ * "Leo" + "I see"  + "water"   → "Leo says: I see water"
+ *
+ * Keeps the natural-language form for the default carrier and uses a
+ * "<name> says: <sentence>" envelope for everything else to avoid
+ * verb conjugation headaches across all the carrier phrases.
+ */
+function announcementFor(name: string, carrier: string, label: string): string {
+  const c = carrier.trim().toLowerCase();
+  if (c === "i want" || c === "") return `${name} wants ${label}`;
+  return `${name} says: ${carrier} ${label}`;
+}
+
+function bannerTextFor(name: string, carrier: string, label: string): string {
+  const c = carrier.trim().toLowerCase();
+  if (c === "i want" || c === "") return `${name} wants ${label}`;
+  return `${name}: ${carrier} ${label}`;
 }
 
 function toHM(date: Date) {

@@ -354,7 +354,7 @@ export default function TeacherPage() {
                   {r.student?.full_name ?? "Unknown"}
                 </span>
                 <span className="text-[var(--muted)] truncate">
-                  wants {r.icon?.label ?? "—"}
+                  {recentTail(r.carrier, r.icon?.label)}
                 </span>
               </div>
               <span
@@ -375,6 +375,28 @@ export default function TeacherPage() {
       </section>
     </main>
   );
+}
+
+function teacherSentence(
+  name: string | undefined,
+  carrier: string | null | undefined,
+  label: string | undefined,
+): string {
+  const n = name ?? "Unknown";
+  const l = label ?? "—";
+  const c = (carrier ?? "I want").trim().toLowerCase();
+  if (c === "i want" || c === "") return `${n} wants ${l}`;
+  return `${n}: ${carrier} ${l}`;
+}
+
+function recentTail(
+  carrier: string | null | undefined,
+  label: string | undefined,
+): string {
+  const l = label ?? "—";
+  const c = (carrier ?? "I want").trim().toLowerCase();
+  if (c === "i want" || c === "") return `wants ${l}`;
+  return `says ${carrier} ${l}`;
 }
 
 function enrich(
@@ -422,7 +444,7 @@ function RequestCard({
         </span>
         <div className="flex-1 min-w-0">
           <p className="text-lg font-semibold truncate">
-            {req.student?.full_name ?? "Unknown"} wants {req.icon?.label ?? "—"}
+            {teacherSentence(req.student?.full_name, req.carrier, req.icon?.label)}
           </p>
           <p
             className="text-sm"

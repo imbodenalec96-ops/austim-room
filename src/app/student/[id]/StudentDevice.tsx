@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Avatar } from "@/components/Avatar";
 import { getSupabase } from "@/lib/supabase/client";
+import { speak } from "@/lib/tts";
 import { ConnectionPill, useChannelState } from "@/lib/useConnection";
 import {
   CATEGORY_COLOR,
@@ -94,7 +95,7 @@ export default function StudentDevice({ student, icons, blocks }: Props) {
     if (icon.category === "carrier") {
       // Replace the sentence-starter ("I want" → "I see")
       setSelectedCarrier(icon);
-      speak(icon.label);
+      void speak(icon.label);
       return;
     }
     setSelectedIcon(icon);
@@ -115,9 +116,15 @@ export default function StudentDevice({ student, icons, blocks }: Props) {
     if (Date.now() - lastSentAt < COOLDOWN_MS) return;
     setSending(true);
     setError(null);
+    const phrase = carrier?.label ?? DEFAULT_CARRIER;
     const { error: e } = await supabase
       .from("pecs_requests")
-      .insert({ student_id: student.id, icon_id: icon.id, status: "pending" });
+      .insert({
+        student_id: student.id,
+        icon_id: icon.id,
+        status: "pending",
+        carrier: phrase,
+      });
     setSending(false);
     if (e) {
       setError(e.message);
@@ -126,22 +133,9 @@ export default function StudentDevice({ student, icons, blocks }: Props) {
     setLastSentAt(Date.now());
     setSelectedIcon(null);
     setSelectedCarrier(null);
-    const phrase = carrier?.label ?? DEFAULT_CARRIER;
-    speak(`${phrase} ${icon.label}`);
+    void speak(`${phrase} ${icon.label}`);
     setConfirmation(`Sent: ${icon.label}`);
     window.setTimeout(() => setConfirmation(null), 2200);
-  }
-
-  function speak(text: string) {
-    if (typeof window === "undefined") return;
-    if (!("speechSynthesis" in window)) return;
-    try {
-      const u = new SpeechSynthesisUtterance(text);
-      u.rate = 0.95;
-      window.speechSynthesis.speak(u);
-    } catch {
-      /* noop */
-    }
   }
 
   return (
