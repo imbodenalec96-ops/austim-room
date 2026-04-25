@@ -12,9 +12,15 @@ let browserClient: SupabaseClient | undefined;
  */
 export function getSupabase(): SupabaseClient {
   if (browserClient) return browserClient;
-  const url =
-    process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder";
+  // .trim() guards against accidental trailing whitespace/newlines in the
+  // env var (an `echo "..." | vercel env add` adds a \n; REST tolerates it
+  // but Supabase Realtime WS auth rejects it with HTTP 401).
+  const url = (
+    process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co"
+  ).trim();
+  const key = (
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder"
+  ).trim();
   if (
     typeof window !== "undefined" &&
     (!process.env.NEXT_PUBLIC_SUPABASE_URL ||

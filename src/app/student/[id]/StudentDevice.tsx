@@ -28,7 +28,7 @@ type Props = {
   blocks: ScheduleBlock[];
 };
 
-const CARRIER_PHRASE = "I want";
+const DEFAULT_CARRIER = "I want";
 const COOLDOWN_MS = 4000;
 const QUICK_MODE_KEY = "pecs.quickSend";
 
@@ -36,6 +36,10 @@ export default function StudentDevice({ student, icons, blocks }: Props) {
   const supabase = useMemo(() => getSupabase(), []);
   const [now, setNow] = useState(new Date());
   const [activeCat, setActiveCat] = useState<PecsCategory | "all">("all");
+  // Two-slot sentence: a carrier phrase ("I want", "I see", …) and an object
+  // icon (water, snack, …). Tapping a "carrier" category icon REPLACES the
+  // carrier phrase. Tapping any other icon fills the object slot.
+  const [selectedCarrier, setSelectedCarrier] = useState<PecsIcon | null>(null);
   const [selectedIcon, setSelectedIcon] = useState<PecsIcon | null>(null);
   const [sending, setSending] = useState(false);
   const [lastSentAt, setLastSentAt] = useState(0);
@@ -84,7 +88,13 @@ export default function StudentDevice({ student, icons, blocks }: Props) {
 
   function pick(icon: PecsIcon) {
     if (quickSend) {
-      void sendIcon(icon);
+      void sendIcon(icon, null);
+      return;
+    }
+    if (icon.category === "carrier") {
+      // Replace the sentence-starter ("I want" → "I see")
+      setSelectedCarrier(icon);
+      speak(icon.label);
       return;
     }
     setSelectedIcon(icon);
@@ -93,14 +103,15 @@ export default function StudentDevice({ student, icons, blocks }: Props) {
 
   function clear() {
     setSelectedIcon(null);
+    setSelectedCarrier(null);
   }
 
   async function send() {
     if (!selectedIcon) return;
-    await sendIcon(selectedIcon);
+    await sendIcon(selectedIcon, selectedCarrier);
   }
 
-  async function sendIcon(icon: PecsIcon) {
+  async function sendIcon(icon: PecsIcon, carrier: PecsIcon | null) {
     if (Date.now() - lastSentAt < COOLDOWN_MS) return;
     setSending(true);
     setError(null);
@@ -114,7 +125,9 @@ export default function StudentDevice({ student, icons, blocks }: Props) {
     }
     setLastSentAt(Date.now());
     setSelectedIcon(null);
-    speak(`I want ${icon.label}`);
+    setSelectedCarrier(null);
+    const phrase = carrier?.label ?? DEFAULT_CARRIER;
+    speak(`${phrase} ${icon.label}`);
     setConfirmation(`Sent: ${icon.label}`);
     window.setTimeout(() => setConfirmation(null), 2200);
   }
@@ -211,10 +224,23 @@ export default function StudentDevice({ student, icons, blocks }: Props) {
             Make a sentence
           </p>
           <div className="sentence-strip">
-            <span className="sentence-token text-2xl bg-white">
-              <span className="text-3xl" aria-hidden>👋</span>
-              <span>{CARRIER_PHRASE}</span>
+            {/* Carrier slot (defaults to "I want", replaced when student
+                taps a carrier-category icon) */}
+            <span
+              key={selectedCarrier?.id ?? "default-carrier"}
+              className={`sentence-token text-2xl ${selectedCarrier ? "token-pop" : ""}`}
+              style={{
+                background: selectedCarrier
+                  ? CATEGORY_COLOR.carrier + "55"
+                  : "white",
+              }}
+            >
+              <span className="text-3xl" aria-hidden>
+                {selectedCarrier?.emoji ?? "🙋"}
+              </span>
+              <span>{selectedCarrier?.label ?? DEFAULT_CARRIER}</span>
             </span>
+
             {selectedIcon ? (
               <span
                 key={selectedIcon.id}
@@ -234,7 +260,7 @@ export default function StudentDevice({ student, icons, blocks }: Props) {
               </span>
             )}
             <div className="ml-auto flex gap-2">
-              {selectedIcon && (
+              {(selectedIcon || selectedCarrier) && (
                 <button onClick={clear} className="btn btn-ghost">
                   Clear
                 </button>
