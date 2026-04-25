@@ -1,60 +1,78 @@
 @import "tailwindcss";
 
-/* Autism-friendly design tokens.
+/* =========================================================================
+   Autism-friendly design tokens.
    - Soft, low-saturation palette
    - High readability
-   - Calm and warm, not clinical */
+   - Calm and warm, not clinical
+   ========================================================================= */
 :root {
   --bg: #f8f6f1;
-  --fg: #2b2b2b;
+  --bg-soft: #f1ede4;
+  --fg: #1f2937;
+  --fg-muted: #5b6472;
   --muted: #6b6b6b;
   --card: #ffffff;
-  --card-border: #ece7dc;
+  --card-border: #e7e1d3;
   --accent: #4f7a9b;     /* calm steel blue */
+  --accent-strong: #355a78;
   --accent-soft: #cfe0ee;
-  --good: #6ea36e;
-  --warn: #d4a04a;
+  --good: #5f9b5f;
+  --warn: #c98a2f;
   --bad:  #c76b6b;
-  --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04);
-  --radius-lg: 18px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow:    0 1px 2px rgba(0,0,0,0.04), 0 6px 18px rgba(0,0,0,0.05);
+  --shadow-lg: 0 4px 12px rgba(0,0,0,0.06), 0 24px 60px rgba(0,0,0,0.08);
+  --radius-md: 14px;
+  --radius-lg: 20px;
   --radius-xl: 28px;
 }
 
 @theme inline {
   --color-background: var(--bg);
   --color-foreground: var(--fg);
-  --color-muted: var(--muted);
+  --color-muted: var(--fg-muted);
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
   --color-good: var(--good);
   --color-warn: var(--warn);
   --color-bad:  var(--bad);
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, -apple-system,
+               "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 html, body { height: 100%; }
 body {
   background: var(--bg);
   color: var(--fg);
-  font-family: var(--font-sans);
+  font-family: var(--font-sans), system-ui, sans-serif;
   font-feature-settings: "ss01", "cv11";
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 /* Reduce motion respects user preference automatically */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
-/* Card */
+/* ---------- Cards ------------------------------------------------------- */
 .card {
   background: var(--card);
   border: 1px solid var(--card-border);
   border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 120ms ease, border-color 120ms ease, transform 120ms ease;
+}
+.card-hover:hover {
+  border-color: color-mix(in oklab, var(--accent) 50%, var(--card-border));
   box-shadow: var(--shadow);
 }
 
-/* Big touch target button */
+/* ---------- Buttons ----------------------------------------------------- */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -67,35 +85,68 @@ body {
   color: white;
   font-weight: 600;
   font-size: 1.05rem;
-  border: none;
+  border: 1px solid transparent;
   cursor: pointer;
-  transition: transform 80ms ease, filter 80ms ease;
+  transition: transform 80ms ease, filter 100ms ease, background 100ms ease;
+  white-space: nowrap;
 }
-.btn:hover { filter: brightness(1.05); }
+.btn:hover { filter: brightness(1.06); }
 .btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-soft {
   background: var(--accent-soft);
-  color: #1f3a4d;
+  color: var(--accent-strong);
 }
 .btn-ghost {
   background: transparent;
   color: var(--fg);
   border: 1px solid var(--card-border);
 }
+.btn-good   { background: var(--good); }
+.btn-bad    { background: var(--bad); }
+.btn-warn   { background: var(--warn); }
+.btn-sm     { min-height: 40px; padding: 0.4rem 0.8rem; font-size: 0.95rem; border-radius: var(--radius-md); }
 
-/* TV board specific - very large, high contrast */
+/* ---------- Chips ------------------------------------------------------- */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  background: white;
+  border: 1px solid var(--card-border);
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--fg);
+  cursor: pointer;
+  transition: background 100ms ease, border-color 100ms ease, color 100ms ease;
+}
+.chip-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+/* ---------- TV board (large display) ----------------------------------- */
 .tv-bg {
-  background: #0f1722;
+  background:
+    radial-gradient(1200px 600px at 80% -200px, rgba(79,122,155,0.30), transparent 60%),
+    radial-gradient(1000px 500px at -100px 110%, rgba(79,122,155,0.20), transparent 60%),
+    #0d141d;
   color: #ffffff;
 }
-.tv-bg.calm { background: #1a2330; }
+.tv-bg.calm {
+  background: #16202c;
+}
 .tv-card {
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.10);
   border-radius: 24px;
+  backdrop-filter: blur(8px);
 }
 
-/* PECS tile */
+/* ---------- PECS tile --------------------------------------------------- */
 .pecs-tile {
   display: flex;
   flex-direction: column;
@@ -106,23 +157,73 @@ body {
   border: 2px solid var(--card-border);
   border-radius: var(--radius-xl);
   padding: 1.25rem 0.75rem;
-  min-height: 160px;
+  min-height: 170px;
   font-weight: 700;
   font-size: 1.125rem;
   cursor: pointer;
-  transition: transform 100ms ease, border-color 100ms ease;
+  transition: transform 100ms ease, border-color 100ms ease, box-shadow 100ms ease;
   user-select: none;
+  position: relative;
 }
-.pecs-tile:hover { border-color: var(--accent); }
-.pecs-tile:active { transform: scale(0.98); }
+.pecs-tile:hover { border-color: var(--accent); box-shadow: var(--shadow); }
+.pecs-tile:active { transform: scale(0.97); }
+.pecs-tile[data-cat]::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 6px;
+  background: var(--cat-color, var(--accent-soft));
+  border-top-left-radius: var(--radius-xl);
+  border-top-right-radius: var(--radius-xl);
+}
 .pecs-emoji { font-size: 4rem; line-height: 1; }
 
-/* Banner pulse for new PECS request on the TV */
+/* ---------- Sentence builder ------------------------------------------- */
+.sentence-strip {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: white;
+  border: 2px dashed var(--card-border);
+  border-radius: var(--radius-xl);
+  min-height: 96px;
+}
+.sentence-token {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--bg-soft);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.75rem;
+  min-width: 84px;
+  font-weight: 700;
+}
+
+/* ---------- Animations ------------------------------------------------- */
 @keyframes pecs-pulse {
   0%   { box-shadow: 0 0 0 0 rgba(255, 200, 100, 0.55); }
   70%  { box-shadow: 0 0 0 28px rgba(255, 200, 100, 0); }
   100% { box-shadow: 0 0 0 0 rgba(255, 200, 100, 0); }
 }
-.pecs-banner {
-  animation: pecs-pulse 1.6s ease-out 1;
+.pecs-banner { animation: pecs-pulse 1.6s ease-out 1; }
+
+@keyframes alert-in {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
+.alert-in { animation: alert-in 220ms ease-out 1; }
+
+@keyframes conn-pulse {
+  0%   { transform: scale(1);   opacity: 0.95; }
+  50%  { transform: scale(1.4); opacity: 0.55; }
+  100% { transform: scale(1);   opacity: 0.95; }
+}
+
+@keyframes transition-flash {
+  0%   { background: rgba(212,160,74,0.20); }
+  50%  { background: rgba(212,160,74,0.45); }
+  100% { background: rgba(212,160,74,0.20); }
+}
+.transition-warn { animation: transition-flash 1.4s ease-in-out infinite; }

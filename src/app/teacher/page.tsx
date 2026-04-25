@@ -1,19 +1,27 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { Avatar } from "@/components/Avatar";
 import { getSupabase } from "@/lib/supabase/client";
+import { ConnectionPill, useChannelStatus } from "@/lib/useConnection";
+import {
+  findCurrentBlock,
+  findNextBlock,
+  formatTime,
+  minutesUntil,
+} from "@/lib/schedule";
 import type {
   PecsIcon,
   PecsRequest,
   RequestStatus,
+  ScheduleBlock,
   Student,
 } from "@/lib/types";
 
 type EnrichedRequest = PecsRequest & {
-  studentName: string;
-  iconLabel: string;
-  iconEmoji: string | null;
+  student: Student | null;
+  icon: PecsIcon | null;
 };
 
 const STATUS_LABEL: Record<RequestStatus, string> = {
@@ -25,9 +33,9 @@ const STATUS_LABEL: Record<RequestStatus, string> = {
 };
 
 const STATUS_COLOR: Record<RequestStatus, string> = {
-  pending: "#d4a04a",
+  pending: "#c98a2f",
   in_progress: "#4f7a9b",
-  completed: "#6ea36e",
+  completed: "#5f9b5f",
   denied: "#c76b6b",
   redirected: "#8a8a8a",
 };
@@ -37,30 +45,48 @@ export default function TeacherPage() {
   const [requests, setRequests] = useState<EnrichedRequest[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [icons, setIcons] = useState<PecsIcon[]>([]);
+  const [blocks, setBlocks] = useState<ScheduleBlock[]>([]);
+  const [now, setNow] = useState(new Date());
   const [loading, setLoading] = useState(true);
+  const studentsRef = useRef<Student[]>([]);
+  const iconsRef = useRef<PecsIcon[]>([]);
+
+  useEffect(() => { studentsRef.current = students; }, [students]);
+  useEffect(() => { iconsRef.current = icons; }, [icons]);
+
+  // Tick clock for live ages and current-block highlight
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [s, i] = await Promise.all([
+      const [s, i, b] = await Promise.all([
         supabase.from("students").select("*"),
         supabase.from("pecs_icons").select("*"),
+        supabase
+          .from("schedule_blocks")
+          .select("*")
+          .is("student_id", null)
+          .order("starts_at"),
       ]);
       if (cancelled) return;
-      const studentsArr = s.data ?? [];
-      const iconsArr = i.data ?? [];
-      setStudents(studentsArr);
-      setIcons(iconsArr);
+      const sArr = (s.data ?? []) as Student[];
+      const iArr = (i.data ?? []) as PecsIcon[];
+      const bArr = (b.data ?? []) as ScheduleBlock[];
+      setStudents(sArr);
+      setIcons(iArr);
+      setBlocks(bArr);
 
       const { data: reqs } = await supabase
         .from("pecs_requests")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(50);
+        .limit(60);
       if (cancelled) return;
-      setRequests(
-        (reqs ?? []).map((r) => enrich(r, studentsArr, iconsArr)),
-      );
+      setRequests(((reqs ?? []) as PecsRequest[]).map((r) => enrich(r, sArr, iArr)));
       setLoading(false);
     })();
     return () => {
@@ -68,34 +94,34 @@ export default function TeacherPage() {
     };
   }, [supabase]);
 
-  // Realtime: stream new + updated requests
-  useEffect(() => {
-    if (students.length === 0 || icons.length === 0) return;
-    const channel = supabase
-      .channel("teacher-pecs")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "pecs_requests" },
-        (payload) => {
-          const row = payload.new as PecsRequest;
-          setRequests((cur) => [enrich(row, students, icons), ...cur].slice(0, 50));
-        },
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "pecs_requests" },
-        (payload) => {
-          const row = payload.new as PecsRequest;
-          setRequests((cur) =>
-            cur.map((r) => (r.id === row.id ? enrich(row, students, icons) : r)),
-          );
-        },
-      )
-      .subscribe();
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-  }, [supabase, students, icons]);
+  const status = useChannelStatus(
+    () =>
+      supabase
+        .channel("teacher-pecs")
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "pecs_requests" },
+          (payload) => {
+            const row = payload.new as PecsRequest;
+            setRequests((cur) =>
+              [enrich(row, studentsRef.current, iconsRef.current), ...cur].slice(0, 60),
+            );
+          },
+        )
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "pecs_requests" },
+          (payload) => {
+            const row = payload.new as PecsRequest;
+            setRequests((cur) =>
+              cur.map((r) =>
+                r.id === row.id ? enrich(row, studentsRef.current, iconsRef.current) : r,
+              ),
+            );
+          },
+        ),
+    [supabase],
+  );
 
   async function setStatus(id: string, status: RequestStatus) {
     const patch: Partial<PecsRequest> = {
@@ -113,28 +139,128 @@ export default function TeacherPage() {
 
   const pending = requests.filter((r) => r.status === "pending");
   const inProgress = requests.filter((r) => r.status === "in_progress");
-  const recent = requests.filter(
-    (r) => r.status !== "pending" && r.status !== "in_progress",
-  );
+  const recent = requests
+    .filter((r) => r.status !== "pending" && r.status !== "in_progress")
+    .slice(0, 12);
+
+  const current = findCurrentBlock(blocks, now);
+  const next = findNextBlock(blocks, now);
+  const minsLeft = current ? minutesUntil(current.ends_at, now) : null;
+
+  // Per-student today counts
+  const todayKey = now.toISOString().slice(0, 10);
+  const perStudentToday: Record<string, number> = {};
+  for (const r of requests) {
+    if (!r.created_at.startsWith(todayKey)) continue;
+    perStudentToday[r.student_id] = (perStudentToday[r.student_id] ?? 0) + 1;
+  }
 
   return (
-    <main className="mx-auto max-w-6xl p-6 space-y-8">
+    <main className="mx-auto max-w-6xl p-5 sm:p-8 space-y-8">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold">Teacher Dashboard</h1>
-          <p className="text-[var(--muted)]">
-            Live PECS requests. Updates instantly across devices.
+          <p className="text-sm uppercase tracking-[0.18em] text-[var(--muted)]">
+            Teacher
           </p>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
         </div>
-        <div className="flex gap-2">
-          <Link href="/board" className="btn btn-soft">
-            📺 Open TV Board
+        <div className="flex flex-wrap gap-2 items-center">
+          <ConnectionPill status={status} />
+          <Link href="/teacher/students" className="btn btn-ghost btn-sm">
+            👥 Roster
           </Link>
-          <Link href="/" className="btn btn-ghost">
+          <Link href="/board" className="btn btn-soft btn-sm">
+            📺 TV Board
+          </Link>
+          <Link href="/" className="btn btn-ghost btn-sm">
             ← Home
           </Link>
         </div>
       </header>
+
+      {/* Today's schedule strip */}
+      <section className="card p-4">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-sm uppercase tracking-widest text-[var(--muted)]">
+            Today
+          </p>
+          {current && minsLeft !== null && (
+            <p className="text-sm text-[var(--muted)]">
+              {minsLeft} min left in <strong>{current.title}</strong>
+              {next && (
+                <>
+                  {" · next: "}
+                  <strong>{next.title}</strong> at {formatTime(next.starts_at)}
+                </>
+              )}
+            </p>
+          )}
+        </div>
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {blocks.map((b) => {
+            const isCurrent = current?.id === b.id;
+            return (
+              <div
+                key={b.id}
+                className="rounded-xl px-3 py-2 min-w-[120px] text-center border"
+                style={{
+                  background: isCurrent ? "var(--accent)" : "white",
+                  color: isCurrent ? "white" : "var(--fg)",
+                  borderColor: isCurrent ? "var(--accent)" : "var(--card-border)",
+                }}
+              >
+                <div className="text-2xl">{b.icon}</div>
+                <div className="text-sm font-semibold leading-tight">{b.title}</div>
+                <div className="text-xs opacity-70">
+                  {formatTime(b.starts_at)}
+                </div>
+              </div>
+            );
+          })}
+          {blocks.length === 0 && (
+            <p className="text-[var(--muted)]">
+              No schedule yet. Load <code>supabase/schema.sql</code>.
+            </p>
+          )}
+        </div>
+      </section>
+
+      {/* Roster preview with today count */}
+      {students.length > 0 && (
+        <section className="card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm uppercase tracking-widest text-[var(--muted)]">
+              Students today
+            </p>
+            <Link href="/teacher/students" className="text-sm text-[var(--accent)] font-semibold">
+              Open roster →
+            </Link>
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-1">
+            {students.map((s) => (
+              <Link
+                key={s.id}
+                href={`/teacher/students/${s.id}`}
+                className="flex flex-col items-center gap-2 min-w-[110px] hover:opacity-90"
+              >
+                <Avatar name={s.full_name} photoUrl={s.photo_url} size={56} />
+                <span className="text-sm font-semibold leading-tight text-center">
+                  {s.full_name.split(" ")[0]}
+                </span>
+                <span
+                  className="text-xs px-2 py-0.5 rounded-full"
+                  style={{
+                    background: "var(--bg-soft)",
+                    color: "var(--fg-muted)",
+                  }}
+                >
+                  {perStudentToday[s.id] ?? 0} today
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section>
         <h2 className="text-xl font-semibold mb-3">
@@ -142,7 +268,7 @@ export default function TeacherPage() {
         </h2>
         <div className="grid gap-3 md:grid-cols-2">
           {pending.map((r) => (
-            <RequestCard key={r.id} req={r} onStatus={setStatus} />
+            <RequestCard key={r.id} req={r} now={now} onStatus={setStatus} />
           ))}
           {!loading && pending.length === 0 && (
             <p className="card p-4 text-[var(--muted)]">No pending requests.</p>
@@ -157,7 +283,7 @@ export default function TeacherPage() {
           </h2>
           <div className="grid gap-3 md:grid-cols-2">
             {inProgress.map((r) => (
-              <RequestCard key={r.id} req={r} onStatus={setStatus} />
+              <RequestCard key={r.id} req={r} now={now} onStatus={setStatus} />
             ))}
           </div>
         </section>
@@ -171,14 +297,18 @@ export default function TeacherPage() {
           {recent.map((r) => (
             <li
               key={r.id}
-              className="p-3 flex items-center justify-between gap-3"
+              className="p-3 flex items-center justify-between gap-3 flex-wrap"
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0">
                 <span className="text-2xl" aria-hidden>
-                  {r.iconEmoji ?? "🖼️"}
+                  {r.icon?.emoji ?? "🖼️"}
                 </span>
-                <span className="font-medium">{r.studentName}</span>
-                <span className="text-[var(--muted)]">wants {r.iconLabel}</span>
+                <span className="font-medium truncate">
+                  {r.student?.full_name ?? "Unknown"}
+                </span>
+                <span className="text-[var(--muted)] truncate">
+                  wants {r.icon?.label ?? "—"}
+                </span>
               </div>
               <span
                 className="text-xs uppercase tracking-wider px-2 py-1 rounded-full"
@@ -205,64 +335,80 @@ function enrich(
   students: Student[],
   icons: PecsIcon[],
 ): EnrichedRequest {
-  const s = students.find((x) => x.id === r.student_id);
-  const i = icons.find((x) => x.id === r.icon_id);
   return {
     ...r,
-    studentName: s?.full_name ?? "Unknown student",
-    iconLabel: i?.label ?? "unknown",
-    iconEmoji: i?.emoji ?? null,
+    student: students.find((s) => s.id === r.student_id) ?? null,
+    icon: icons.find((i) => i.id === r.icon_id) ?? null,
   };
 }
 
 function RequestCard({
   req,
+  now,
   onStatus,
 }: {
   req: EnrichedRequest;
+  now: Date;
   onStatus: (id: string, s: RequestStatus) => void;
 }) {
   const ageSec = Math.max(
     0,
-    Math.floor((Date.now() - new Date(req.created_at).getTime()) / 1000),
+    Math.floor((now.getTime() - new Date(req.created_at).getTime()) / 1000),
   );
+  const ageLabel =
+    ageSec < 60
+      ? `${ageSec}s ago`
+      : ageSec < 3600
+        ? `${Math.floor(ageSec / 60)}m ${ageSec % 60}s ago`
+        : `${Math.floor(ageSec / 3600)}h ago`;
+  const stale = ageSec > 60;
   return (
-    <article className="card p-4">
+    <article className="card p-4 alert-in">
       <div className="flex items-center gap-4">
+        <Avatar
+          name={req.student?.full_name ?? "?"}
+          photoUrl={req.student?.photo_url ?? null}
+          size={56}
+        />
         <span className="text-5xl" aria-hidden>
-          {req.iconEmoji ?? "🖼️"}
+          {req.icon?.emoji ?? "🖼️"}
         </span>
         <div className="flex-1 min-w-0">
           <p className="text-lg font-semibold truncate">
-            {req.studentName} wants {req.iconLabel}
+            {req.student?.full_name ?? "Unknown"} wants {req.icon?.label ?? "—"}
           </p>
-          <p className="text-sm text-[var(--muted)]">
-            {ageSec < 60 ? `${ageSec}s ago` : `${Math.floor(ageSec / 60)}m ago`}
+          <p
+            className="text-sm"
+            style={{ color: stale ? "var(--bad)" : "var(--muted)" }}
+          >
+            {ageLabel}
           </p>
         </div>
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
         <button
-          className="btn btn-soft"
+          className="btn btn-soft btn-sm"
           onClick={() => onStatus(req.id, "in_progress")}
         >
           On it
         </button>
-        <button className="btn" onClick={() => onStatus(req.id, "completed")}>
-          ✅ Done
+        <button
+          className="btn btn-good btn-sm"
+          onClick={() => onStatus(req.id, "completed")}
+        >
+          ✓ Done
         </button>
         <button
-          className="btn btn-ghost"
+          className="btn btn-ghost btn-sm"
           onClick={() => onStatus(req.id, "redirected")}
         >
-          ↩︎ Redirect
+          ↩ Redirect
         </button>
         <button
-          className="btn btn-ghost"
+          className="btn btn-bad btn-sm"
           onClick={() => onStatus(req.id, "denied")}
-          style={{ color: "var(--bad)" }}
         >
-          ✖ Deny
+          ✕ Deny
         </button>
       </div>
     </article>
