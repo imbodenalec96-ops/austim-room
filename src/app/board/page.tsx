@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { getSupabase } from "@/lib/supabase/client";
-import { speak } from "@/lib/tts";
+import { speak, unlockAudio } from "@/lib/tts";
 import { carrierFor } from "@/lib/carrier";
 import { ConnectionPill, useChannelState } from "@/lib/useConnection";
 import {
@@ -49,6 +49,7 @@ export default function BoardPage() {
   const [calmMode, setCalmMode] = useState(false);
   const [silent, setSilent] = useState(false);
   const audioReadyRef = useRef(false);
+  const [audioUnlocked, setAudioUnlocked] = useState(false);
   const studentsRef = useRef<Student[]>([]);
   const iconsRef = useRef<PecsIcon[]>([]);
   const seenRequestIds = useRef<Set<string>>(new Set());
@@ -426,13 +427,30 @@ export default function BoardPage() {
       <footer className="text-white/40 text-sm">
         Tap anywhere on this page once to enable audio (browser policy).
       </footer>
-      {/* One-shot to "warm up" speechSynthesis after a user gesture */}
-      <button
-        aria-hidden
-        onClick={() => announce(" ")}
-        className="fixed inset-0 opacity-0 pointer-events-auto"
-        style={{ display: audioReadyRef.current ? "none" : "block" }}
-      />
+      {/* Visible warm-up overlay. Browsers block autoplay until a user
+          gesture, so we present a clear "Tap to enable sound" CTA that
+          unlocks Audio + SpeechSynthesis for the rest of the session. */}
+      {!audioUnlocked && (
+        <button
+          onClick={async () => {
+            await unlockAudio();
+            audioReadyRef.current = true;
+            setAudioUnlocked(true);
+            announce("Sound is on");
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: "rgba(13, 20, 29, 0.92)", color: "white" }}
+        >
+          <div className="text-center max-w-md px-6">
+            <div className="text-7xl mb-4">🔊</div>
+            <p className="text-3xl font-bold mb-2">Tap anywhere to enable sound</p>
+            <p className="text-base opacity-70">
+              Browsers require a tap before audio can play. After this you'll
+              hear every PECS request announced out loud.
+            </p>
+          </div>
+        </button>
+      )}
     </main>
   );
 }

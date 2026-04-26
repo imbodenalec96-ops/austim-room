@@ -15,6 +15,41 @@ type Cache = Map<string, string>; // text → object URL
 const audioCache: Cache = new Map();
 
 let lastAudio: HTMLAudioElement | null = null;
+let audioUnlocked = false;
+
+/**
+ * Unlock browser autoplay policy by playing a 1ms silent buffer in
+ * response to a user gesture. After this resolves, future Audio.play()
+ * and speechSynthesis calls work without per-utterance gestures.
+ *
+ * Call from a click/touch handler.
+ */
+export async function unlockAudio(): Promise<void> {
+  if (audioUnlocked) return;
+  if (typeof window === "undefined") return;
+  try {
+    // Tiny silent MP3 (data URL) — just enough to satisfy autoplay policy
+    const silent = new Audio(
+      "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQxAADB8AhSmxhIIEVCSiJrDCQBTcu3UrAIwUdkRgQbFAZC1CQEwTJ9mjRvBA4UOLD8nKVOWfh+UlK3z/177OXrfOdKl7pyn3Xf//FJAhMQAYAAAAAA",
+    );
+    silent.volume = 0;
+    await silent.play();
+    silent.pause();
+  } catch {
+    /* noop */
+  }
+  // Also prime SpeechSynthesis as a fallback path
+  if ("speechSynthesis" in window) {
+    try {
+      const u = new SpeechSynthesisUtterance("");
+      window.speechSynthesis.speak(u);
+      window.speechSynthesis.cancel();
+    } catch {
+      /* noop */
+    }
+  }
+  audioUnlocked = true;
+}
 
 function browserFallback(text: string) {
   if (typeof window === "undefined") return;
